@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "doubledoor",
+  "version": "${version}",
+  "name": "Doubledoor",
+  "description": "一个简单的木质双开门模组。",
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/doubledoor/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["cn.fanziyun.doubledoor.DoubledoorMod"]
+  },
+  "mixins": ["doubledoor.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

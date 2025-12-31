@@ -1,0 +1,72 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id "fabric-loom" version "${loom_version}"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+}
+
+// ========== 联网获取最新组件版本 ==========
+
+def mcVersion = project.findProperty("minecraft_version") ?: "1.21.1"
+def loaderVersion = fetchLoaderVersion(mcVersion)
+def apiVersion = fetchApiVersion(mcVersion)
+
+println ""
+println ">> Doubledoor 构建配置 <<"
+println "Minecraft: ${mcVersion}"
+println "Loom:     ${loom_version}"
+println "Loader:   ${loaderVersion}"
+println "API:      ${apiVersion}"
+println ""
+
+dependencies {
+    minecraft "com.mojang:minecraft:${mcVersion}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${loaderVersion}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${apiVersion}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filteringCharset "UTF-8"
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+// ========== 工具方法 ==========
+
+def fetchLoaderVersion(mcVer) {
+    try {
+        def url = "https://meta.fabricmc.net/v2/versions/loader/${mcVer}".toURL()
+        def json = new JsonSlurper().parseText(url.text)
+        return json[0].loader.version as String
+    } catch (Exception e) {
+        def fallback = project.findProperty("loader_fallback") ?: "0.16.10"
+        println "[WARN] 无法获取 Fabric Loader 版本 (${e.message}), 使用回退: ${fallback}"
+        return fallback
+    }
+}
+
+def fetchApiVersion(mcVer) {
+    try {
+        def gamesEncoded = URLEncoder.encode("[\"${mcVer}\"]", "UTF-8")
+        def loadersEncoded = URLEncoder.encode("[\"fabric\"]", "UTF-8")
+        def url = "https://api.modrinth.com/v2/project/fabric-api/version?game_versions=${gamesEncoded}&loaders=${loadersEncoded}&limit=1".toURL()
+        def json = new JsonSlurper().parseText(url.text)
+        return json[0].version_number as String
+    } catch (Exception e) {
+        def fallback = project.findProperty("api_fallback") ?: "0.116.5+1.21.1"
+        println "[WARN] 无法获取 Fabric API 版本 (${e.message}), 使用回退: ${fallback}"
+        return fallback
+    }
+}
